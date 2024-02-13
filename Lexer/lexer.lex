@@ -10,13 +10,16 @@ typedef struct {
     char value[256];
     int sec ;
     int tokenNo;
+    int cnt;
 } Token;
 
 Token token;
-
+Token Identifier[1000];
 Token Identifier1[100];
 Token Identifier2[100];
 Token Identifier3[100];
+
+int noIden = 0;
 int noIden1 = 0;
 int noIden2 = 0;
 int noIden3 = 0;
@@ -24,8 +27,34 @@ int noIden3 = 0;
 int compareStructs(const void *a, const void *b) {
     return strcmp((( Token*)a)->value, (( Token*)b)->value);
 }
+int orderCount(const void *a, const void *b) {
+    if((( Token*)a)->cnt>(( Token*)b)->cnt){
+        return -1;
+    }
+    else if((( Token*)a)->cnt<(( Token*)b)->cnt){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+    //return strcmp((( Token*)a)->value, (( Token*)b)->value);
+}
 
 int errorFlag = 0;
+
+int findToken(Token t){
+    for(int i = 0 ; i <noIden;i++){
+        if(strcmp(Identifier[i].value,token.value)==0){
+            Identifier[i].cnt++;
+            return 0;
+        }
+    }
+    Identifier[noIden] = token;
+    Identifier[noIden].tokenNo = noIden;
+    noIden++;
+
+    return 0;
+}
 
 %}
 
@@ -132,21 +161,8 @@ Bracket [\{|\}|\[|\]]
                 strcpy(token.value , yytext);
                 token.sec = section;
                 int flag = 0;
-                if(section>1){
-                    for(int i = 0 ; i <noIden1;i++){
-                        if(strcmp(Identifier1[i].value,token.value)==0 && Identifier1[i].sec==1){
-                            flag = 1;
-                            break;
-                        }
-                    }
-                    if(flag ==0){
-                        if(errorFlag==0){
-                            return -5;
-                        }
-                        
-                        //errorFlag= 1;
-                    }
-                }
+               
+                flag = 0;
                 
                 return 0;
             }//word
@@ -194,7 +210,7 @@ int yywrap(){
 int main(){
     while(1){
         int ret = yylex();
-
+        errorFlag = 0;
         if(errorFlag ==1){
             //printf("NOT stored going ahead till new line \n\n");
             continue;
@@ -230,6 +246,10 @@ int main(){
             printf("Val: %s , Type: %s  \n", token.value,token.type);
             
             if(strcmp(token.type,"Identifier")==0){
+                token.cnt = 1;
+                findToken(token);
+                
+                
                 if(token.sec==1){
                     Identifier1[noIden1] = token;
                     Identifier1[noIden1].tokenNo = noIden1;
@@ -262,6 +282,7 @@ int main(){
     size_t arraySize = sizeof(Identifier1) / sizeof(Identifier1[0]);
 
     // Sort the array using qsort
+    qsort(Identifier, noIden, sizeof( Token), orderCount);
     qsort(Identifier1, noIden1, sizeof( Token), compareStructs);
     qsort(Identifier2, noIden2, sizeof( Token), compareStructs);
     qsort(Identifier3, noIden3, sizeof( Token), compareStructs);
@@ -276,6 +297,10 @@ int main(){
     }
     for(int i= 0; i <noIden3;i++){
         printf("(%d) %s : Section = %d  , token pos: %d\n",i,Identifier3[i].value,Identifier3[i].sec,Identifier3[i].tokenNo);
+    }
+
+    for(int i= 0; i <noIden;i++){
+        printf("(%d) %s : Section = %d  , token pos: %d , cnt : %d\n",i,Identifier[i].value,Identifier[i].sec, Identifier[i].tokenNo,Identifier[i].cnt );
     }
     return 0;
 }
